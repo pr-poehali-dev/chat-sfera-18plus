@@ -36,28 +36,9 @@ interface Message {
 }
 
 // ==================== ДАННЫЕ ====================
-const NOTIFICATIONS: Notification[] = [
-  { id: 1, type: "message", text: "Алекс написал вам сообщение", time: "2 мин", read: false, avatar: "А" },
-  { id: 2, type: "reaction", text: "Мария поставила 🔥 на ваш пост", time: "15 мин", read: false, avatar: "М" },
-  { id: 3, type: "comment", text: "Дима прокомментировал: «Супер!»", time: "1 ч", read: false, avatar: "Д" },
-  { id: 4, type: "follow", text: "Катя начала на вас подписку", time: "3 ч", read: true, avatar: "К" },
-  { id: 5, type: "reaction", text: "Иван поставил ❤️ на ваш пост", time: "5 ч", read: true, avatar: "И" },
-];
-
-const POSTS: Post[] = [
-  { id: 1, author: "Александра Миронова", avatar: "А", content: "Запустили новую версию проекта 🚀 Три месяца работы и наконец-то это в продакшне. Спасибо всей команде за терпение и ночные сессии!", likes: 234, comments: 47, time: "5 мин назад", liked: false, tag: "Разработка" },
-  { id: 2, author: "Максим Орлов", avatar: "М", content: "Кто-нибудь пробовал новые нейросети для генерации UI? Поделитесь впечатлениями — ищу что-то стоящее для рабочих задач.", likes: 89, comments: 23, time: "32 мин назад", liked: true, tag: "AI/ML" },
-  { id: 3, author: "Полина Звезда", avatar: "П", content: "Утренняя пробежка в 5:30 AM — лучшее что я сделала этим летом. Советую всем попробовать хотя бы неделю. Энергия зашкаливает весь день ✨", likes: 412, comments: 68, time: "1 ч назад", liked: false, tag: "Лайфстайл" },
-  { id: 4, author: "Кирилл Власов", avatar: "К", content: "Открытие месяца: TypeScript дженерики это не страшно, если потратить 2 часа на нормальный туториал. Всем кто боится — дерзайте!", likes: 156, comments: 34, time: "2 ч назад", liked: false, tag: "Разработка" },
-];
-
-const MESSAGES: Message[] = [
-  { id: 1, author: "Алекс Новиков", avatar: "А", text: "Привет! Как дела с проектом?", time: "только что", online: true, unread: 3 },
-  { id: 2, author: "Мария Светлова", avatar: "М", text: "Посмотри мой последний пост!", time: "5 мин", online: true, unread: 1 },
-  { id: 3, author: "Команда ЧатСферы", avatar: "Ч", text: "Добро пожаловать на платформу!", time: "1 ч", online: false, unread: 0 },
-  { id: 4, author: "Дима Ковалёв", avatar: "Д", text: "Встреча в среду в 15:00?", time: "3 ч", online: false, unread: 0 },
-  { id: 5, author: "Катя Романова", avatar: "К", text: "Спасибо за реакцию на пост 🔥", time: "вчера", online: true, unread: 0 },
-];
+const NOTIFICATIONS: Notification[] = [];
+const POSTS: Post[] = [];
+const MESSAGES: Message[] = [];
 
 // ==================== КОМПОНЕНТЫ ====================
 
@@ -121,7 +102,7 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
         <div className="relative z-10 px-6 pt-12 pb-10 text-center">
           <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-6 animate-fade-in">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse-neon" />
-            <span className="text-xs text-green-400 font-medium">2 847 онлайн прямо сейчас</span>
+            <span className="text-xs text-green-400 font-medium">Добро пожаловать</span>
           </div>
           <h1 className="font-montserrat font-black text-4xl mb-3 animate-fade-in" style={{ animationDelay: "0.1s" }}>
             <span className="gradient-text">ЧатСфера</span>
@@ -145,7 +126,7 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
         <div className="grid grid-cols-2 gap-3">
           {[
             { icon: "Rss", label: "Лента", desc: "Новые посты", color: "from-purple-600/30 to-pink-600/20", border: "border-purple-500/20", page: "feed" as Page },
-            { icon: "MessageCircle", label: "Мессенджер", desc: "3 новых", color: "from-blue-600/30 to-cyan-600/20", border: "border-blue-500/20", page: "messenger" as Page },
+            { icon: "MessageCircle", label: "Мессенджер", desc: "Личные чаты", color: "from-blue-600/30 to-cyan-600/20", border: "border-blue-500/20", page: "messenger" as Page },
             { icon: "User", label: "Профиль", desc: "Мои публикации", color: "from-orange-600/30 to-yellow-600/20", border: "border-orange-500/20", page: "profile" as Page },
             { icon: "Settings", label: "Кабинет", desc: "Настройки", color: "from-emerald-600/30 to-teal-600/20", border: "border-emerald-500/20", page: "account" as Page },
           ].map((item, i) => (
@@ -162,22 +143,10 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
           ))}
         </div>
 
-        <div className="glass rounded-3xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Icon name="TrendingUp" size={18} className="text-purple-400" />
-            <h3 className="font-montserrat font-bold text-white text-sm">В тренде</h3>
-          </div>
-          <div className="space-y-3">
-            {["#разработка", "#AI_ML", "#лайфстайл", "#стартапы"].map((tag, i) => (
-              <div key={tag} className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold text-purple-300">{tag}</div>
-                  <div className="text-xs text-[hsl(var(--muted-foreground))]">{[234, 189, 156, 98][i]} публикаций</div>
-                </div>
-                <div className="text-xs text-emerald-400 font-medium">+{[12, 8, 5, 3][i]}%</div>
-              </div>
-            ))}
-          </div>
+        <div className="glass rounded-3xl p-5 text-center">
+          <Icon name="TrendingUp" size={32} className="text-purple-400/40 mx-auto mb-3" />
+          <div className="text-sm font-semibold text-white/60">Тренды появятся по мере роста аудитории</div>
+          <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Здесь будут популярные темы и хэштеги</div>
         </div>
       </div>
     </div>
@@ -222,40 +191,50 @@ function FeedPage() {
         ))}
       </div>
 
-      <div className="px-4 pb-6 space-y-4">
-        {filtered.map((post, i) => (
-          <div key={post.id} className="glass rounded-3xl p-5 animate-fade-in" style={{ animationDelay: `${i * 0.08}s` }}>
-            <div className="flex items-start gap-3 mb-3">
-              <Avatar letter={post.avatar} size="md" color={["purple", "blue", "pink", "orange"][i % 4]} online={i < 2} />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-white text-sm">{post.author}</div>
-                <div className="text-xs text-[hsl(var(--muted-foreground))]">{post.time}</div>
-              </div>
-              <span className="text-xs px-2 py-1 rounded-full bg-purple-500/15 text-purple-300 font-medium">{post.tag}</span>
-            </div>
-            <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed mb-4 opacity-90">{post.content}</p>
-            <div className="divider-gradient mb-4" />
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => toggleLike(post.id)}
-                className={`flex items-center gap-1.5 text-sm transition-all duration-200 ${post.liked ? "text-pink-400" : "text-[hsl(var(--muted-foreground))] hover:text-pink-400"}`}
-              >
-                <Icon name="Heart" size={16} />
-                {post.likes}
-              </button>
-              <button className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-blue-400 transition-colors">
-                <Icon name="MessageCircle" size={16} />
-                {post.comments}
-              </button>
-              <button className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-purple-400 transition-colors ml-auto">
-                <Icon name="Share2" size={16} />
-              </button>
-              <button className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-yellow-400 transition-colors">
-                <Icon name="Bookmark" size={16} />
-              </button>
-            </div>
+      <div className="px-4 pb-6">
+        {filtered.length === 0 ? (
+          <div className="glass rounded-3xl p-10 text-center animate-fade-in">
+            <Icon name="Rss" size={40} className="text-purple-400/30 mx-auto mb-4" />
+            <div className="font-montserrat font-bold text-white/60 text-base mb-2">Лента пуста</div>
+            <div className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">Будьте первым — напишите пост<br />нажав кнопку выше</div>
           </div>
-        ))}
+        ) : (
+          <div className="space-y-4">
+            {filtered.map((post, i) => (
+              <div key={post.id} className="glass rounded-3xl p-5 animate-fade-in" style={{ animationDelay: `${i * 0.08}s` }}>
+                <div className="flex items-start gap-3 mb-3">
+                  <Avatar letter={post.avatar} size="md" color={["purple", "blue", "pink", "orange"][i % 4]} online={i < 2} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-white text-sm">{post.author}</div>
+                    <div className="text-xs text-[hsl(var(--muted-foreground))]">{post.time}</div>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded-full bg-purple-500/15 text-purple-300 font-medium">{post.tag}</span>
+                </div>
+                <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed mb-4 opacity-90">{post.content}</p>
+                <div className="divider-gradient mb-4" />
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => toggleLike(post.id)}
+                    className={`flex items-center gap-1.5 text-sm transition-all duration-200 ${post.liked ? "text-pink-400" : "text-[hsl(var(--muted-foreground))] hover:text-pink-400"}`}
+                  >
+                    <Icon name="Heart" size={16} />
+                    {post.likes}
+                  </button>
+                  <button className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-blue-400 transition-colors">
+                    <Icon name="MessageCircle" size={16} />
+                    {post.comments}
+                  </button>
+                  <button className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-purple-400 transition-colors ml-auto">
+                    <Icon name="Share2" size={16} />
+                  </button>
+                  <button className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-yellow-400 transition-colors">
+                    <Icon name="Bookmark" size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -265,11 +244,7 @@ function MessengerPage() {
   const [active, setActive] = useState<number | null>(null);
   const [inputVal, setInputVal] = useState("");
   type ChatMsg = { from: "me" | "them"; text: string };
-  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([
-    { from: "them", text: "Привет! Как дела с проектом?" },
-    { from: "me", text: "Привет! Всё отлично, почти закончили!" },
-    { from: "them", text: "Здорово, жду результата 🚀" },
-  ]);
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
 
   const sendMessage = () => {
     if (!inputVal.trim()) return;
@@ -297,6 +272,13 @@ function MessengerPage() {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+          {chatMessages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center pt-10">
+              <Icon name="MessageCircle" size={40} className="text-purple-400/30 mb-4" />
+              <div className="text-sm font-semibold text-white/50">Начните диалог</div>
+              <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Напишите первое сообщение</div>
+            </div>
+          )}
           {chatMessages.map((msg, i) => (
             <div key={i} className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"} animate-fade-in`}>
               <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed
@@ -333,29 +315,39 @@ function MessengerPage() {
           <input placeholder="Поиск по сообщениям..." className="flex-1 bg-transparent text-sm outline-none text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]" />
         </div>
       </div>
-      <div className="px-4 py-2 space-y-1">
-        {MESSAGES.map((msg, i) => (
-          <button
-            key={msg.id}
-            onClick={() => setActive(msg.id)}
-            className="w-full glass glass-hover rounded-3xl p-4 flex items-center gap-3 text-left animate-fade-in"
-            style={{ animationDelay: `${i * 0.06}s` }}
-          >
-            <Avatar letter={msg.avatar} size="md" color={["purple", "pink", "blue", "orange", "green"][i % 5]} online={msg.online} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="font-semibold text-white text-sm truncate">{msg.author}</span>
-                <span className="text-xs text-[hsl(var(--muted-foreground))] flex-shrink-0 ml-2">{msg.time}</span>
-              </div>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{msg.text}</p>
-            </div>
-            {msg.unread > 0 && (
-              <span className="flex-shrink-0 w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">
-                {msg.unread}
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="px-4 py-2">
+        {MESSAGES.length === 0 ? (
+          <div className="glass rounded-3xl p-10 text-center animate-fade-in mt-2">
+            <Icon name="MessageCircle" size={40} className="text-purple-400/30 mx-auto mb-4" />
+            <div className="font-montserrat font-bold text-white/60 text-base mb-2">Нет сообщений</div>
+            <div className="text-sm text-[hsl(var(--muted-foreground))]">Здесь появятся ваши диалоги</div>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {MESSAGES.map((msg, i) => (
+              <button
+                key={msg.id}
+                onClick={() => setActive(msg.id)}
+                className="w-full glass glass-hover rounded-3xl p-4 flex items-center gap-3 text-left animate-fade-in"
+                style={{ animationDelay: `${i * 0.06}s` }}
+              >
+                <Avatar letter={msg.avatar} size="md" color={["purple", "pink", "blue", "orange", "green"][i % 5]} online={msg.online} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="font-semibold text-white text-sm truncate">{msg.author}</span>
+                    <span className="text-xs text-[hsl(var(--muted-foreground))] flex-shrink-0 ml-2">{msg.time}</span>
+                  </div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{msg.text}</p>
+                </div>
+                {msg.unread > 0 && (
+                  <span className="flex-shrink-0 w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white">
+                    {msg.unread}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -363,9 +355,9 @@ function MessengerPage() {
 
 function ProfilePage() {
   const stats = [
-    { label: "Постов", value: "47" },
-    { label: "Подписчики", value: "1.2K" },
-    { label: "Подписки", value: "234" },
+    { label: "Постов", value: "0" },
+    { label: "Подписчики", value: "0" },
+    { label: "Подписки", value: "0" },
   ];
   return (
     <div className="flex-1 overflow-y-auto">
@@ -376,15 +368,14 @@ function ProfilePage() {
       <div className="px-4 pb-4">
         <div className="flex items-end justify-between -mt-8 mb-4">
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl font-bold text-white font-montserrat ring-4 ring-[hsl(var(--background))]">
-            Я
+            ?
           </div>
           <button className="glass glass-hover px-4 py-2 rounded-2xl text-sm font-medium text-white">
             Редактировать
           </button>
         </div>
-        <h2 className="font-montserrat font-bold text-white text-xl">Иван Иванов</h2>
-        <p className="text-[hsl(var(--muted-foreground))] text-sm mt-1">Разработчик · Москва</p>
-        <p className="text-sm text-[hsl(var(--foreground))] mt-3 opacity-80 leading-relaxed">Создаю продукты, которые меняют жизнь к лучшему 🚀 Люблю чистый код и хороший кофе.</p>
+        <h2 className="font-montserrat font-bold text-white text-xl">Ваше имя</h2>
+        <p className="text-[hsl(var(--muted-foreground))] text-sm mt-1">Заполните профиль</p>
         <div className="grid grid-cols-3 gap-3 mt-4">
           {stats.map(s => (
             <div key={s.label} className="glass rounded-2xl p-3 text-center">
@@ -395,17 +386,13 @@ function ProfilePage() {
         </div>
       </div>
       <div className="divider-gradient mx-4" />
-      <div className="px-4 pt-4 pb-6 space-y-3">
-        <h3 className="font-montserrat font-bold text-white">Мои публикации</h3>
-        {POSTS.slice(0, 2).map((post, i) => (
-          <div key={post.id} className="glass rounded-3xl p-4 animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
-            <p className="text-sm text-[hsl(var(--foreground))] opacity-90 leading-relaxed mb-3">{post.content}</p>
-            <div className="flex gap-4 text-xs text-[hsl(var(--muted-foreground))]">
-              <span className="flex items-center gap-1"><Icon name="Heart" size={12} /> {post.likes}</span>
-              <span className="flex items-center gap-1"><Icon name="MessageCircle" size={12} /> {post.comments}</span>
-            </div>
-          </div>
-        ))}
+      <div className="px-4 pt-4 pb-6">
+        <h3 className="font-montserrat font-bold text-white mb-3">Мои публикации</h3>
+        <div className="glass rounded-3xl p-10 text-center animate-fade-in">
+          <Icon name="FileText" size={36} className="text-purple-400/30 mx-auto mb-3" />
+          <div className="text-sm font-semibold text-white/60">Публикаций пока нет</div>
+          <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Перейдите в Ленту и напишите первый пост</div>
+        </div>
       </div>
     </div>
   );
@@ -423,14 +410,10 @@ function AccountPage() {
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4">
       <div className="glass rounded-3xl p-5 flex items-center gap-4 mb-6">
-        <Avatar letter="Я" size="lg" color="purple" online />
+        <Avatar letter="?" size="lg" color="purple" online />
         <div className="flex-1">
-          <div className="font-montserrat font-bold text-white">Иван Иванов</div>
-          <div className="text-sm text-[hsl(var(--muted-foreground))]">ivan@example.com</div>
-          <div className="mt-1 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300">
-            <Icon name="Star" size={10} />
-            Pro аккаунт
-          </div>
+          <div className="font-montserrat font-bold text-white">Ваше имя</div>
+          <div className="text-sm text-[hsl(var(--muted-foreground))]">email@example.com</div>
         </div>
       </div>
       <div className="space-y-2">
@@ -465,15 +448,10 @@ function AccountPage() {
 
 function AdminPage() {
   const stats = [
-    { icon: "Users", label: "Всего пользователей", value: "12 847", change: "+127 сегодня", color: "text-purple-400", bg: "bg-purple-500/15" },
-    { icon: "Rss", label: "Постов за день", value: "3 421", change: "+8.3%", color: "text-blue-400", bg: "bg-blue-500/15" },
-    { icon: "MessageCircle", label: "Сообщений сегодня", value: "48 923", change: "+15.2%", color: "text-pink-400", bg: "bg-pink-500/15" },
-    { icon: "TrendingUp", label: "Активность", value: "94.2%", change: "Высокая", color: "text-emerald-400", bg: "bg-emerald-500/15" },
-  ];
-  const users = [
-    { name: "Александра М.", email: "alex@ex.com", status: "active", role: "Пользователь" },
-    { name: "Максим О.", email: "max@ex.com", status: "active", role: "Модератор" },
-    { name: "Полина З.", email: "pol@ex.com", status: "banned", role: "Пользователь" },
+    { icon: "Users", label: "Всего пользователей", value: "0", color: "text-purple-400", bg: "bg-purple-500/15" },
+    { icon: "Rss", label: "Постов за день", value: "0", color: "text-blue-400", bg: "bg-blue-500/15" },
+    { icon: "MessageCircle", label: "Сообщений сегодня", value: "0", color: "text-pink-400", bg: "bg-pink-500/15" },
+    { icon: "TrendingUp", label: "Активность", value: "—", color: "text-emerald-400", bg: "bg-emerald-500/15" },
   ];
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -491,29 +469,17 @@ function AdminPage() {
             </div>
             <div className="font-montserrat font-black text-white text-xl">{s.value}</div>
             <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">{s.label}</div>
-            <div className="text-xs text-emerald-400 mt-1 font-medium">{s.change}</div>
           </div>
         ))}
       </div>
       <div className="glass rounded-3xl p-4 mb-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-montserrat font-bold text-white text-sm">Пользователи</h3>
-          <button className="text-xs text-purple-400 hover:text-purple-300 transition-colors">Все →</button>
         </div>
-        <div className="space-y-3">
-          {users.map((u, i) => (
-            <div key={u.name} className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: `${i * 0.08}s` }}>
-              <Avatar letter={u.name[0]} size="sm" color={["purple", "blue", "orange"][i]} />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-white truncate">{u.name}</div>
-                <div className="text-xs text-[hsl(var(--muted-foreground))] truncate">{u.email}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300">{u.role}</span>
-                <span className={`w-2 h-2 rounded-full ${u.status === "active" ? "bg-emerald-400" : "bg-red-400"}`} />
-              </div>
-            </div>
-          ))}
+        <div className="text-center py-6">
+          <Icon name="Users" size={32} className="text-purple-400/30 mx-auto mb-3" />
+          <div className="text-sm text-white/50">Пользователей пока нет</div>
+          <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Они появятся после регистрации</div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -555,26 +521,34 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {notifs.map((n, i) => (
-            <div
-              key={n.id}
-              className={`px-4 py-4 border-b border-white/5 flex items-start gap-3 transition-colors hover:bg-white/5 cursor-pointer animate-fade-in ${!n.read ? "bg-purple-500/5" : ""}`}
-              style={{ animationDelay: `${i * 0.06}s` }}
-              onClick={() => setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
-            >
-              <div className="relative">
-                <Avatar letter={n.avatar} size="sm" color={["purple", "pink", "blue", "green", "orange"][i % 5]} />
-                {!n.read && <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-purple-400 rounded-full" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-[hsl(var(--foreground))] leading-snug opacity-90">{n.text}</p>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <Icon name={typeIcon[n.type] as never} size={11} className={typeColor[n.type]} />
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">{n.time} назад</span>
+          {notifs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+              <Icon name="Bell" size={40} className="text-purple-400/30 mb-4" />
+              <div className="text-sm font-semibold text-white/60">Нет уведомлений</div>
+              <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Здесь будут уведомления о сообщениях, реакциях и комментариях</div>
+            </div>
+          ) : (
+            notifs.map((n, i) => (
+              <div
+                key={n.id}
+                className={`px-4 py-4 border-b border-white/5 flex items-start gap-3 transition-colors hover:bg-white/5 cursor-pointer animate-fade-in ${!n.read ? "bg-purple-500/5" : ""}`}
+                style={{ animationDelay: `${i * 0.06}s` }}
+                onClick={() => setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
+              >
+                <div className="relative">
+                  <Avatar letter={n.avatar} size="sm" color={["purple", "pink", "blue", "green", "orange"][i % 5]} />
+                  {!n.read && <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-purple-400 rounded-full" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-[hsl(var(--foreground))] leading-snug opacity-90">{n.text}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Icon name={typeIcon[n.type] as never} size={11} className={typeColor[n.type]} />
+                    <span className="text-xs text-[hsl(var(--muted-foreground))]">{n.time} назад</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
