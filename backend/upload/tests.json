@@ -1,0 +1,11 @@
+{
+  "tests": [
+    {
+      "name": "Upload OPTIONS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
