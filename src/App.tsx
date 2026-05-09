@@ -1,8 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+
+const AUTH_URL = "https://functions.poehali.dev/31457deb-e02e-4825-a18a-ecf359cba65e";
 
 // ==================== ТИПЫ ====================
 type Page = "home" | "feed" | "messenger" | "profile" | "account" | "admin";
+
+interface User {
+  id: number;
+  username: string;
+  role: "admin" | "user";
+}
 
 interface Notification {
   id: number;
@@ -35,8 +43,6 @@ interface Message {
   unread: number;
 }
 
-// ==================== ДАННЫЕ ====================
-const NOTIFICATIONS: Notification[] = [];
 const POSTS: Post[] = [];
 const MESSAGES: Message[] = [];
 
@@ -56,7 +62,7 @@ function Avatar({ letter, size = "md", color = "purple", online = false }: {
   return (
     <div className={`relative inline-flex ${online ? "status-online" : ""}`}>
       <div className={`${sizes[size]} rounded-2xl bg-gradient-to-br ${colors[color] || colors.purple} flex items-center justify-center font-bold text-white font-montserrat flex-shrink-0`}>
-        {letter}
+        {letter.toUpperCase()}
       </div>
     </div>
   );
@@ -90,6 +96,139 @@ function NavItem({ icon, label, active, onClick, badge = 0 }: {
   );
 }
 
+// ==================== 18+ ЗАСТАВКА ====================
+function AgeGate({ onAccept }: { onAccept: () => void }) {
+  const decline = () => {
+    window.location.href = "https://yandex.ru";
+  };
+  return (
+    <div className="min-h-screen bg-[hsl(var(--background))] flex flex-col items-center justify-center px-6 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-700/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-700/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative z-10 max-w-sm w-full text-center animate-fade-in">
+        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center mx-auto mb-6 glow-orange">
+          <span className="font-montserrat font-black text-white text-2xl">18+</span>
+        </div>
+        <h1 className="font-montserrat font-black text-3xl text-white mb-3">
+          <span className="gradient-text">ЧатСфера 18+</span>
+        </h1>
+        <p className="text-[hsl(var(--muted-foreground))] text-sm leading-relaxed mb-8">
+          Данный сайт предназначен <span className="text-white font-semibold">строго для лиц старше 18 лет</span>. Продолжая, вы подтверждаете своё совершеннолетие.
+        </p>
+        <div className="glass rounded-3xl p-5 mb-6 text-left">
+          <div className="flex items-start gap-3">
+            <Icon name="AlertTriangle" size={20} className="text-orange-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+              На сайте могут содержаться материалы для взрослых. Вход для лиц младше 18 лет запрещён законодательством.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={onAccept}
+            className="btn-gradient text-white font-bold py-4 rounded-2xl text-base w-full"
+          >
+            Мне 18+ — войти на сайт
+          </button>
+          <button
+            onClick={decline}
+            className="glass text-[hsl(var(--muted-foreground))] hover:text-white font-medium py-3.5 rounded-2xl text-sm w-full transition-colors"
+          >
+            Мне меньше 18 лет — покинуть сайт
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== ФОРМА ВХОДА ====================
+function LoginPage({ onLogin }: { onLogin: (user: User) => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!username.trim() || !password.trim()) {
+      setError("Введите логин и пароль");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "login", username: username.trim(), password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.user) {
+        onLogin(data.user);
+      } else {
+        setError(data.error || "Ошибка входа");
+      }
+    } catch {
+      setError("Ошибка сети. Попробуйте ещё раз.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-[hsl(var(--background))] flex flex-col items-center justify-center px-6 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-72 h-72 bg-purple-700/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-56 h-56 bg-pink-700/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative z-10 max-w-sm w-full animate-fade-in">
+        <div className="text-center mb-8">
+          <h1 className="font-montserrat font-black text-3xl mb-2">
+            <span className="gradient-text">ЧатСфера 18+</span>
+          </h1>
+          <p className="text-[hsl(var(--muted-foreground))] text-sm">Войдите в свой аккаунт</p>
+        </div>
+        <div className="glass rounded-3xl p-6 space-y-4">
+          <div>
+            <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1.5 block">Логин</label>
+            <input
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleLogin()}
+              placeholder="Введите логин"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-[hsl(var(--muted-foreground))] outline-none focus:border-purple-500/50 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1.5 block">Пароль</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleLogin()}
+              placeholder="Введите пароль"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-[hsl(var(--muted-foreground))] outline-none focus:border-purple-500/50 transition-colors"
+            />
+          </div>
+          {error && (
+            <div className="flex items-center gap-2 text-red-400 text-xs bg-red-500/10 rounded-xl px-3 py-2.5">
+              <Icon name="AlertCircle" size={14} />
+              {error}
+            </div>
+          )}
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full btn-gradient text-white font-bold py-3.5 rounded-2xl text-sm disabled:opacity-50 transition-opacity"
+          >
+            {loading ? "Вход..." : "Войти"}
+          </button>
+        </div>
+        <p className="text-center text-xs text-[hsl(var(--muted-foreground))] mt-4">
+          Регистрация доступна только по приглашению администратора
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ==================== СТРАНИЦЫ ====================
 
 function HomePage({ setPage }: { setPage: (p: Page) => void }) {
@@ -105,7 +244,7 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
             <span className="text-xs text-green-400 font-medium">Добро пожаловать</span>
           </div>
           <h1 className="font-montserrat font-black text-4xl mb-3 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            <span className="gradient-text">ЧатСфера</span>
+            <span className="gradient-text">ЧатСфера 18+</span>
           </h1>
           <p className="text-[hsl(var(--muted-foreground))] text-base mb-8 animate-fade-in leading-relaxed" style={{ animationDelay: "0.2s" }}>
             Общайся, делись моментами<br />и находи единомышленников
@@ -120,7 +259,6 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
           </div>
         </div>
       </div>
-
       <div className="px-4 py-6 space-y-4">
         <h2 className="font-montserrat font-bold text-lg text-white">Быстрый доступ</h2>
         <div className="grid grid-cols-2 gap-3">
@@ -142,7 +280,6 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
             </button>
           ))}
         </div>
-
         <div className="glass rounded-3xl p-5 text-center">
           <Icon name="TrendingUp" size={32} className="text-purple-400/40 mx-auto mb-3" />
           <div className="text-sm font-semibold text-white/60">Тренды появятся по мере роста аудитории</div>
@@ -153,30 +290,84 @@ function HomePage({ setPage }: { setPage: (p: Page) => void }) {
   );
 }
 
-function FeedPage() {
+function FeedPage({ user }: { user: User }) {
   const [posts, setPosts] = useState<Post[]>(POSTS);
   const [activeFilter, setActiveFilter] = useState("Все");
+  const [showNewPost, setShowNewPost] = useState(false);
+  const [newContent, setNewContent] = useState("");
+  const [newTag, setNewTag] = useState("Разработка");
   const filters = ["Все", "Разработка", "AI/ML", "Лайфстайл"];
+  const isAdmin = user.role === "admin";
 
   const toggleLike = (id: number) => {
     setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p));
+  };
+
+  const addPost = () => {
+    if (!newContent.trim()) return;
+    const post: Post = {
+      id: Date.now(),
+      author: user.username,
+      avatar: user.username[0],
+      content: newContent,
+      likes: 0,
+      comments: 0,
+      time: "только что",
+      liked: false,
+      tag: newTag,
+    };
+    setPosts(prev => [post, ...prev]);
+    setNewContent("");
+    setShowNewPost(false);
   };
 
   const filtered = activeFilter === "Все" ? posts : posts.filter(p => p.tag === activeFilter);
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="px-4 pt-4 pb-2">
-        <div className="glass rounded-3xl p-4 flex items-center gap-3">
-          <Avatar letter="Я" size="md" color="purple" />
-          <div className="flex-1 bg-white/5 rounded-2xl px-4 py-2.5 text-sm text-[hsl(var(--muted-foreground))] cursor-pointer hover:bg-white/8 transition-colors">
-            Что нового?
-          </div>
-          <button className="btn-gradient text-white p-2.5 rounded-2xl">
-            <Icon name="Plus" size={18} />
-          </button>
+      {isAdmin && (
+        <div className="px-4 pt-4 pb-2">
+          {showNewPost ? (
+            <div className="glass rounded-3xl p-4 space-y-3 animate-fade-in">
+              <textarea
+                value={newContent}
+                onChange={e => setNewContent(e.target.value)}
+                placeholder="Что нового?"
+                rows={3}
+                className="w-full bg-white/5 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-[hsl(var(--muted-foreground))] outline-none resize-none focus:bg-white/8 transition-colors"
+              />
+              <div className="flex gap-2 flex-wrap">
+                {filters.slice(1).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setNewTag(f)}
+                    className={`text-xs px-3 py-1.5 rounded-full transition-all ${newTag === f ? "btn-gradient text-white" : "glass text-[hsl(var(--muted-foreground))]"}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={addPost} className="btn-gradient text-white text-sm font-semibold px-5 py-2.5 rounded-2xl flex-1">Опубликовать</button>
+                <button onClick={() => setShowNewPost(false)} className="glass text-[hsl(var(--muted-foreground))] text-sm px-4 py-2.5 rounded-2xl">Отмена</button>
+              </div>
+            </div>
+          ) : (
+            <div className="glass rounded-3xl p-4 flex items-center gap-3">
+              <Avatar letter={user.username[0]} size="md" color="purple" />
+              <div
+                onClick={() => setShowNewPost(true)}
+                className="flex-1 bg-white/5 rounded-2xl px-4 py-2.5 text-sm text-[hsl(var(--muted-foreground))] cursor-pointer hover:bg-white/8 transition-colors"
+              >
+                Что нового?
+              </div>
+              <button onClick={() => setShowNewPost(true)} className="btn-gradient text-white p-2.5 rounded-2xl">
+                <Icon name="Plus" size={18} />
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       <div className="flex gap-2 px-4 py-3 overflow-x-auto">
         {filters.map(f => (
@@ -196,14 +387,16 @@ function FeedPage() {
           <div className="glass rounded-3xl p-10 text-center animate-fade-in">
             <Icon name="Rss" size={40} className="text-purple-400/30 mx-auto mb-4" />
             <div className="font-montserrat font-bold text-white/60 text-base mb-2">Лента пуста</div>
-            <div className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">Будьте первым — напишите пост<br />нажав кнопку выше</div>
+            <div className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
+              {isAdmin ? "Напишите первый пост выше" : "Публикации ещё не появились"}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
             {filtered.map((post, i) => (
               <div key={post.id} className="glass rounded-3xl p-5 animate-fade-in" style={{ animationDelay: `${i * 0.08}s` }}>
                 <div className="flex items-start gap-3 mb-3">
-                  <Avatar letter={post.avatar} size="md" color={["purple", "blue", "pink", "orange"][i % 4]} online={i < 2} />
+                  <Avatar letter={post.avatar} size="md" color={["purple", "blue", "pink", "orange"][i % 4]} />
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-white text-sm">{post.author}</div>
                     <div className="text-xs text-[hsl(var(--muted-foreground))]">{post.time}</div>
@@ -213,16 +406,11 @@ function FeedPage() {
                 <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed mb-4 opacity-90">{post.content}</p>
                 <div className="divider-gradient mb-4" />
                 <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => toggleLike(post.id)}
-                    className={`flex items-center gap-1.5 text-sm transition-all duration-200 ${post.liked ? "text-pink-400" : "text-[hsl(var(--muted-foreground))] hover:text-pink-400"}`}
-                  >
-                    <Icon name="Heart" size={16} />
-                    {post.likes}
+                  <button onClick={() => toggleLike(post.id)} className={`flex items-center gap-1.5 text-sm transition-all duration-200 ${post.liked ? "text-pink-400" : "text-[hsl(var(--muted-foreground))] hover:text-pink-400"}`}>
+                    <Icon name="Heart" size={16} /> {post.likes}
                   </button>
                   <button className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-blue-400 transition-colors">
-                    <Icon name="MessageCircle" size={16} />
-                    {post.comments}
+                    <Icon name="MessageCircle" size={16} /> {post.comments}
                   </button>
                   <button className="flex items-center gap-1.5 text-sm text-[hsl(var(--muted-foreground))] hover:text-purple-400 transition-colors ml-auto">
                     <Icon name="Share2" size={16} />
@@ -267,9 +455,6 @@ function MessengerPage() {
               {contact.online ? "онлайн" : "не в сети"}
             </div>
           </div>
-          <button className="text-[hsl(var(--muted-foreground))] hover:text-white">
-            <Icon name="MoreVertical" size={18} />
-          </button>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
           {chatMessages.length === 0 && (
@@ -289,9 +474,6 @@ function MessengerPage() {
           ))}
         </div>
         <div className="glass px-4 py-3 border-t border-white/5 flex items-center gap-3">
-          <button className="text-[hsl(var(--muted-foreground))] hover:text-purple-400 transition-colors">
-            <Icon name="Paperclip" size={20} />
-          </button>
           <input
             value={inputVal}
             onChange={e => setInputVal(e.target.value)}
@@ -325,12 +507,7 @@ function MessengerPage() {
         ) : (
           <div className="space-y-1">
             {MESSAGES.map((msg, i) => (
-              <button
-                key={msg.id}
-                onClick={() => setActive(msg.id)}
-                className="w-full glass glass-hover rounded-3xl p-4 flex items-center gap-3 text-left animate-fade-in"
-                style={{ animationDelay: `${i * 0.06}s` }}
-              >
+              <button key={msg.id} onClick={() => setActive(msg.id)} className="w-full glass glass-hover rounded-3xl p-4 flex items-center gap-3 text-left animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
                 <Avatar letter={msg.avatar} size="md" color={["purple", "pink", "blue", "orange", "green"][i % 5]} online={msg.online} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
@@ -353,7 +530,7 @@ function MessengerPage() {
   );
 }
 
-function ProfilePage() {
+function ProfilePage({ user }: { user: User }) {
   const stats = [
     { label: "Постов", value: "0" },
     { label: "Подписчики", value: "0" },
@@ -368,14 +545,15 @@ function ProfilePage() {
       <div className="px-4 pb-4">
         <div className="flex items-end justify-between -mt-8 mb-4">
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl font-bold text-white font-montserrat ring-4 ring-[hsl(var(--background))]">
-            ?
+            {user.username[0].toUpperCase()}
           </div>
-          <button className="glass glass-hover px-4 py-2 rounded-2xl text-sm font-medium text-white">
-            Редактировать
-          </button>
+          {user.role === "admin" && (
+            <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-300 font-medium">
+              <Icon name="Shield" size={11} /> Администратор
+            </span>
+          )}
         </div>
-        <h2 className="font-montserrat font-bold text-white text-xl">Ваше имя</h2>
-        <p className="text-[hsl(var(--muted-foreground))] text-sm mt-1">Заполните профиль</p>
+        <h2 className="font-montserrat font-bold text-white text-xl">{user.username}</h2>
         <div className="grid grid-cols-3 gap-3 mt-4">
           {stats.map(s => (
             <div key={s.label} className="glass rounded-2xl p-3 text-center">
@@ -391,38 +569,36 @@ function ProfilePage() {
         <div className="glass rounded-3xl p-10 text-center animate-fade-in">
           <Icon name="FileText" size={36} className="text-purple-400/30 mx-auto mb-3" />
           <div className="text-sm font-semibold text-white/60">Публикаций пока нет</div>
-          <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Перейдите в Ленту и напишите первый пост</div>
+          {user.role === "admin" && <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Перейдите в Ленту и напишите первый пост</div>}
         </div>
       </div>
     </div>
   );
 }
 
-function AccountPage() {
+function AccountPage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const sections = [
     { icon: "User", label: "Личные данные", desc: "Имя, фото, контакты" },
     { icon: "Bell", label: "Уведомления", desc: "Сообщения, реакции, комментарии" },
-    { icon: "Lock", label: "Безопасность", desc: "Пароль, 2FA, сессии" },
+    { icon: "Lock", label: "Безопасность", desc: "Пароль, сессии" },
     { icon: "Eye", label: "Приватность", desc: "Кто видит ваши данные" },
     { icon: "Palette", label: "Внешний вид", desc: "Тема, размер шрифта" },
-    { icon: "CreditCard", label: "Подписка", desc: "ЧатСфера Pro — активна" },
   ];
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4">
       <div className="glass rounded-3xl p-5 flex items-center gap-4 mb-6">
-        <Avatar letter="?" size="lg" color="purple" online />
+        <Avatar letter={user.username[0]} size="lg" color="purple" online />
         <div className="flex-1">
-          <div className="font-montserrat font-bold text-white">Ваше имя</div>
-          <div className="text-sm text-[hsl(var(--muted-foreground))]">email@example.com</div>
+          <div className="font-montserrat font-bold text-white">{user.username}</div>
+          <div className="mt-1 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300">
+            <Icon name={user.role === "admin" ? "Shield" : "User"} size={10} />
+            {user.role === "admin" ? "Администратор" : "Пользователь"}
+          </div>
         </div>
       </div>
       <div className="space-y-2">
         {sections.map((s, i) => (
-          <button
-            key={s.label}
-            className="w-full glass glass-hover rounded-2xl px-4 py-4 flex items-center gap-4 text-left animate-fade-in"
-            style={{ animationDelay: `${i * 0.06}s` }}
-          >
+          <button key={s.label} className="w-full glass glass-hover rounded-2xl px-4 py-4 flex items-center gap-4 text-left animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
             <div className="w-10 h-10 rounded-2xl bg-purple-500/15 flex items-center justify-center">
               <Icon name={s.icon as never} size={18} className="text-purple-400" />
             </div>
@@ -435,7 +611,7 @@ function AccountPage() {
         ))}
       </div>
       <div className="mt-6">
-        <button className="w-full glass rounded-2xl px-4 py-4 flex items-center gap-4 text-left hover:bg-red-500/10 transition-colors">
+        <button onClick={onLogout} className="w-full glass rounded-2xl px-4 py-4 flex items-center gap-4 text-left hover:bg-red-500/10 transition-colors">
           <div className="w-10 h-10 rounded-2xl bg-red-500/15 flex items-center justify-center">
             <Icon name="LogOut" size={18} className="text-red-400" />
           </div>
@@ -446,13 +622,73 @@ function AccountPage() {
   );
 }
 
-function AdminPage() {
+// ==================== АДМИНКА ====================
+function AdminPage({ user }: { user: User }) {
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [newLogin, setNewLogin] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<"user" | "admin">("user");
+  const [createError, setCreateError] = useState("");
+  const [createSuccess, setCreateSuccess] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [users, setUsers] = useState<{ id: number; username: string; role: string; created_at: string }[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "get_users", admin_id: user.id }),
+      });
+      const data = await res.json();
+      if (data.users) setUsers(data.users);
+    } catch (e) { console.error(e); }
+    setLoadingUsers(false);
+  };
+
+  useEffect(() => { loadUsers(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const createUser = async () => {
+    if (!newLogin.trim() || !newPassword.trim()) { setCreateError("Заполните все поля"); return; }
+    setCreating(true);
+    setCreateError("");
+    setCreateSuccess("");
+    try {
+      const res = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_user",
+          admin_id: user.id,
+          new_username: newLogin.trim(),
+          new_password: newPassword.trim(),
+          role: newRole,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCreateSuccess(`Пользователь «${newLogin}» создан! Пароль: ${newPassword}`);
+        setNewLogin("");
+        setNewPassword("");
+        loadUsers();
+      } else {
+        setCreateError(data.error || "Ошибка создания");
+      }
+    } catch {
+      setCreateError("Ошибка сети");
+    }
+    setCreating(false);
+  };
+
   const stats = [
-    { icon: "Users", label: "Всего пользователей", value: "0", color: "text-purple-400", bg: "bg-purple-500/15" },
+    { icon: "Users", label: "Всего пользователей", value: String(users.length), color: "text-purple-400", bg: "bg-purple-500/15" },
     { icon: "Rss", label: "Постов за день", value: "0", color: "text-blue-400", bg: "bg-blue-500/15" },
     { icon: "MessageCircle", label: "Сообщений сегодня", value: "0", color: "text-pink-400", bg: "bg-pink-500/15" },
     { icon: "TrendingUp", label: "Активность", value: "—", color: "text-emerald-400", bg: "bg-emerald-500/15" },
   ];
+
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4">
       <div className="flex items-center gap-2 mb-5">
@@ -461,6 +697,7 @@ function AdminPage() {
         </div>
         <h2 className="font-montserrat font-bold text-white text-lg">Панель администратора</h2>
       </div>
+
       <div className="grid grid-cols-2 gap-3 mb-6">
         {stats.map((s, i) => (
           <div key={s.label} className="glass rounded-3xl p-4 animate-scale-in" style={{ animationDelay: `${i * 0.07}s` }}>
@@ -472,30 +709,98 @@ function AdminPage() {
           </div>
         ))}
       </div>
+
+      {/* Создать пользователя */}
       <div className="glass rounded-3xl p-4 mb-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-montserrat font-bold text-white text-sm">Пользователи</h3>
-        </div>
-        <div className="text-center py-6">
-          <Icon name="Users" size={32} className="text-purple-400/30 mx-auto mb-3" />
-          <div className="text-sm text-white/50">Пользователей пока нет</div>
-          <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Они появятся после регистрации</div>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { icon: "UserPlus", label: "Добавить пользователя", bg: "bg-purple-500/15", color: "text-purple-300" },
-          { icon: "Flag", label: "Жалобы (3)", bg: "bg-red-500/15", color: "text-red-300" },
-          { icon: "BarChart2", label: "Статистика", bg: "bg-blue-500/15", color: "text-blue-300" },
-          { icon: "Settings", label: "Настройки сайта", bg: "bg-emerald-500/15", color: "text-emerald-300" },
-        ].map(a => (
-          <button key={a.label} className="glass glass-hover rounded-2xl p-3 flex items-center gap-2 text-left">
-            <div className={`w-8 h-8 rounded-xl ${a.bg} flex items-center justify-center flex-shrink-0`}>
-              <Icon name={a.icon as never} size={16} className={a.color} />
-            </div>
-            <span className="text-xs font-medium text-white leading-tight">{a.label}</span>
+          <h3 className="font-montserrat font-bold text-white text-sm">Создать пользователя</h3>
+          <button onClick={() => setShowCreateUser(!showCreateUser)} className="text-purple-400 hover:text-purple-300 transition-colors">
+            <Icon name={showCreateUser ? "ChevronUp" : "ChevronDown"} size={18} />
           </button>
-        ))}
+        </div>
+        {showCreateUser && (
+          <div className="space-y-3 animate-fade-in">
+            <div>
+              <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">Логин</label>
+              <input
+                value={newLogin}
+                onChange={e => setNewLogin(e.target.value)}
+                placeholder="Введите логин"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-[hsl(var(--muted-foreground))] outline-none focus:border-purple-500/50 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[hsl(var(--muted-foreground))] mb-1 block">Пароль</label>
+              <input
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="Введите пароль"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-[hsl(var(--muted-foreground))] outline-none focus:border-purple-500/50 transition-colors"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setNewRole("user")}
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${newRole === "user" ? "btn-gradient text-white" : "glass text-[hsl(var(--muted-foreground))]"}`}
+              >
+                Пользователь
+              </button>
+              <button
+                onClick={() => setNewRole("admin")}
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${newRole === "admin" ? "bg-gradient-to-r from-orange-500 to-red-500 text-white" : "glass text-[hsl(var(--muted-foreground))]"}`}
+              >
+                Администратор
+              </button>
+            </div>
+            {createError && (
+              <div className="flex items-center gap-2 text-red-400 text-xs bg-red-500/10 rounded-xl px-3 py-2">
+                <Icon name="AlertCircle" size={13} /> {createError}
+              </div>
+            )}
+            {createSuccess && (
+              <div className="flex items-start gap-2 text-emerald-400 text-xs bg-emerald-500/10 rounded-xl px-3 py-2">
+                <Icon name="CheckCircle" size={13} className="mt-0.5 flex-shrink-0" />
+                <span>{createSuccess}</span>
+              </div>
+            )}
+            <button onClick={createUser} disabled={creating} className="w-full btn-gradient text-white text-sm font-semibold py-3 rounded-xl disabled:opacity-50">
+              {creating ? "Создание..." : "Создать пользователя"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Список пользователей */}
+      <div className="glass rounded-3xl p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-montserrat font-bold text-white text-sm">Пользователи</h3>
+          <button onClick={loadUsers} className="text-xs text-purple-400 hover:text-purple-300 transition-colors">
+            <Icon name="RefreshCw" size={14} />
+          </button>
+        </div>
+        {loadingUsers ? (
+          <div className="text-center py-4 text-sm text-[hsl(var(--muted-foreground))]">Загрузка...</div>
+        ) : users.length === 0 ? (
+          <div className="text-center py-6">
+            <Icon name="Users" size={32} className="text-purple-400/30 mx-auto mb-3" />
+            <div className="text-sm text-white/50">Пользователей пока нет</div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {users.map((u, i) => (
+              <div key={u.id} className="flex items-center gap-3 animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
+                <Avatar letter={u.username[0]} size="sm" color={u.role === "admin" ? "orange" : "purple"} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-white truncate">{u.username}</div>
+                  <div className="text-xs text-[hsl(var(--muted-foreground))]">{new Date(u.created_at).toLocaleDateString("ru")}</div>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.role === "admin" ? "bg-orange-500/15 text-orange-300" : "bg-blue-500/15 text-blue-300"}`}>
+                  {u.role === "admin" ? "Админ" : "Юзер"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -503,22 +808,15 @@ function AdminPage() {
 
 // ==================== УВЕДОМЛЕНИЯ ====================
 function NotificationsPanel({ onClose }: { onClose: () => void }) {
-  const [notifs, setNotifs] = useState<Notification[]>(NOTIFICATIONS);
-  const markAllRead = () => setNotifs(prev => prev.map(n => ({ ...n, read: true })));
-  const typeIcon: Record<string, string> = { message: "MessageCircle", comment: "MessageSquare", reaction: "Heart", follow: "UserPlus" };
-  const typeColor: Record<string, string> = { message: "text-blue-400", comment: "text-purple-400", reaction: "text-pink-400", follow: "text-emerald-400" };
-
+  const [notifs] = useState<Notification[]>([]);
   return (
     <div className="absolute inset-0 z-50 flex justify-end animate-fade-in" onClick={onClose}>
       <div className="w-80 h-full glass border-l border-white/10 flex flex-col animate-slide-in" onClick={e => e.stopPropagation()}>
         <div className="px-4 py-4 border-b border-white/5 flex items-center justify-between">
           <h3 className="font-montserrat font-bold text-white">Уведомления</h3>
-          <div className="flex items-center gap-2">
-            <button onClick={markAllRead} className="text-xs text-purple-400 hover:text-purple-300 transition-colors">Прочитать все</button>
-            <button onClick={onClose} className="text-[hsl(var(--muted-foreground))] hover:text-white transition-colors">
-              <Icon name="X" size={18} />
-            </button>
-          </div>
+          <button onClick={onClose} className="text-[hsl(var(--muted-foreground))] hover:text-white transition-colors">
+            <Icon name="X" size={18} />
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">
           {notifs.length === 0 ? (
@@ -527,28 +825,7 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
               <div className="text-sm font-semibold text-white/60">Нет уведомлений</div>
               <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Здесь будут уведомления о сообщениях, реакциях и комментариях</div>
             </div>
-          ) : (
-            notifs.map((n, i) => (
-              <div
-                key={n.id}
-                className={`px-4 py-4 border-b border-white/5 flex items-start gap-3 transition-colors hover:bg-white/5 cursor-pointer animate-fade-in ${!n.read ? "bg-purple-500/5" : ""}`}
-                style={{ animationDelay: `${i * 0.06}s` }}
-                onClick={() => setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
-              >
-                <div className="relative">
-                  <Avatar letter={n.avatar} size="sm" color={["purple", "pink", "blue", "green", "orange"][i % 5]} />
-                  {!n.read && <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-purple-400 rounded-full" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-[hsl(var(--foreground))] leading-snug opacity-90">{n.text}</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Icon name={typeIcon[n.type] as never} size={11} className={typeColor[n.type]} />
-                    <span className="text-xs text-[hsl(var(--muted-foreground))]">{n.time} назад</span>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -557,29 +834,55 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
 
 // ==================== ГЛАВНЫЙ КОМПОНЕНТ ====================
 export default function App() {
+  const [ageConfirmed, setAgeConfirmed] = useState(() => sessionStorage.getItem("age_ok") === "1");
+  const [user, setUser] = useState<User | null>(() => {
+    const s = sessionStorage.getItem("cs_user");
+    return s ? JSON.parse(s) : null;
+  });
   const [page, setPage] = useState<Page>("home");
   const [showNotifs, setShowNotifs] = useState(false);
 
-  const unreadCount = NOTIFICATIONS.filter(n => !n.read).length;
-  const unreadMessages = MESSAGES.reduce((acc, m) => acc + m.unread, 0);
+  const handleAgeAccept = () => {
+    sessionStorage.setItem("age_ok", "1");
+    setAgeConfirmed(true);
+  };
 
-  const navItems: { icon: string; label: string; page: Page; badge?: number }[] = [
+  const handleLogin = (u: User) => {
+    sessionStorage.setItem("cs_user", JSON.stringify(u));
+    setUser(u);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("cs_user");
+    setUser(null);
+    setPage("home");
+  };
+
+  if (!ageConfirmed) return <AgeGate onAccept={handleAgeAccept} />;
+  if (!user) return <LoginPage onLogin={handleLogin} />;
+
+  const isAdmin = user.role === "admin";
+
+  const navItems: { icon: string; label: string; page: Page }[] = [
     { icon: "Home", label: "Главная", page: "home" },
     { icon: "Rss", label: "Лента", page: "feed" },
-    { icon: "MessageCircle", label: "Чаты", page: "messenger", badge: unreadMessages },
+    { icon: "MessageCircle", label: "Чаты", page: "messenger" },
     { icon: "User", label: "Профиль", page: "profile" },
     { icon: "Settings", label: "Кабинет", page: "account" },
-    { icon: "Shield", label: "Админка", page: "admin" },
+    ...(isAdmin ? [{ icon: "Shield", label: "Админка", page: "admin" as Page }] : []),
   ];
 
   const pageTitles: Record<Page, string> = {
-    home: "ЧатСфера",
+    home: "ЧатСфера 18+",
     feed: "Лента",
     messenger: "Сообщения",
     profile: "Мой профиль",
     account: "Личный кабинет",
     admin: "Администрирование",
   };
+
+  // Если обычный пользователь попал на admin — редирект
+  if (page === "admin" && !isAdmin) setPage("home");
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] flex flex-col max-w-md mx-auto relative overflow-hidden">
@@ -591,29 +894,22 @@ export default function App() {
       <header className="relative z-10 glass border-b border-white/5 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <h1 className="font-montserrat font-black text-xl gradient-text">{pageTitles[page]}</h1>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowNotifs(true)}
-            className="relative w-9 h-9 rounded-2xl glass glass-hover flex items-center justify-center"
-          >
+          <button onClick={() => setShowNotifs(true)} className="relative w-9 h-9 rounded-2xl glass glass-hover flex items-center justify-center">
             <Icon name="Bell" size={18} className="text-white" />
-            <NotifBadge count={unreadCount} />
           </button>
-          <button
-            onClick={() => setPage("profile")}
-            className="w-9 h-9 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm font-montserrat"
-          >
-            Я
+          <button onClick={() => setPage("profile")} className="w-9 h-9 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm font-montserrat">
+            {user.username[0].toUpperCase()}
           </button>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col overflow-hidden relative z-10" key={page}>
         {page === "home" && <HomePage setPage={setPage} />}
-        {page === "feed" && <FeedPage />}
+        {page === "feed" && <FeedPage user={user} />}
         {page === "messenger" && <MessengerPage />}
-        {page === "profile" && <ProfilePage />}
-        {page === "account" && <AccountPage />}
-        {page === "admin" && <AdminPage />}
+        {page === "profile" && <ProfilePage user={user} />}
+        {page === "account" && <AccountPage user={user} onLogout={handleLogout} />}
+        {page === "admin" && isAdmin && <AdminPage user={user} />}
       </main>
 
       <nav className="relative z-10 glass border-t border-white/5 px-2 py-1 flex items-center justify-around flex-shrink-0">
@@ -624,7 +920,6 @@ export default function App() {
             label={item.label}
             active={page === item.page}
             onClick={() => setPage(item.page)}
-            badge={item.badge}
           />
         ))}
       </nav>

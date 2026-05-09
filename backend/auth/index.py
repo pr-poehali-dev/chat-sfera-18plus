@@ -19,12 +19,11 @@ def handler(event: dict, context) -> dict:
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
 
-    method = event.get('httpMethod', 'GET')
-    path = event.get('path', '/')
     body = json.loads(event.get('body') or '{}')
+    action = body.get('action', '')
 
-    # POST /login — вход
-    if method == 'POST' and path.endswith('/login'):
+    # login — вход по логину/паролю
+    if action == 'login':
         username = body.get('username', '').strip()
         password = body.get('password', '').strip()
         if not username or not password:
@@ -33,7 +32,7 @@ def handler(event: dict, context) -> dict:
         pw_hash = hashlib.md5(password.encode()).hexdigest()
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute(f"SELECT id, username, role FROM {SCHEMA}.users WHERE username = %s AND password_hash = %s", (username, pw_hash))
+        cur.execute("SELECT id, username, role FROM " + SCHEMA + ".users WHERE username = '" + username.replace("'", "''") + "' AND password_hash = '" + pw_hash + "'")
         row = cur.fetchone()
         conn.close()
 
@@ -43,24 +42,24 @@ def handler(event: dict, context) -> dict:
         user = {'id': row[0], 'username': row[1], 'role': row[2]}
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'user': user})}
 
-    # POST /create-user — создание пользователя (только admin)
-    if method == 'POST' and path.endswith('/create-user'):
-        admin_login = body.get('admin_username', '')
-        admin_pass = body.get('admin_password', '')
+    # create_user — создание пользователя (только admin, проверяем по admin_id)
+    if action == 'create_user':
+        admin_id = int(body.get('admin_id', 0))
 
-        pw_hash = hashlib.md5(admin_pass.encode()).hexdigest()
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute(f"SELECT role FROM {SCHEMA}.users WHERE username = %s AND password_hash = %s", (admin_login, pw_hash))
+        cur.execute("SELECT role FROM " + SCHEMA + ".users WHERE id = " + str(admin_id))
         row = cur.fetchone()
 
         if not row or row[0] != 'admin':
             conn.close()
             return {'statusCode': 403, 'headers': CORS, 'body': json.dumps({'error': 'Доступ запрещён'})}
 
-        new_username = body.get('new_username', '').strip()
+        new_username = body.get('new_username', '').strip().replace("'", "''")
         new_password = body.get('new_password', '').strip()
         role = body.get('role', 'user')
+        if role not in ('admin', 'user'):
+            role = 'user'
 
         if not new_username or not new_password:
             conn.close()
@@ -68,35 +67,33 @@ def handler(event: dict, context) -> dict:
 
         new_hash = hashlib.md5(new_password.encode()).hexdigest()
         try:
-            cur.execute(f"INSERT INTO {SCHEMA}.users (username, password_hash, role) VALUES (%s, %s, %s) RETURNING id", (new_username, new_hash, role))
+            cur.execute("INSERT INTO " + SCHEMA + ".users (username, password_hash, role) VALUES ('" + new_username + "', '" + new_hash + "', '" + role + "') RETURNING id")
             new_id = cur.fetchone()[0]
             conn.commit()
             conn.close()
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'id': new_id, 'username': new_username, 'role': role})}
-        except psycopg2.errors.UniqueViolation:
+        except Exception:
             conn.close()
             return {'statusCode': 409, 'headers': CORS, 'body': json.dumps({'error': 'Такой логин уже существует'})}
 
-    # GET /users — список пользователей (только admin)
-    if method == 'POST' and path.endswith('/users'):
-        admin_login = body.get('admin_username', '')
-        admin_pass = body.get('admin_password', '')
-        pw_hash = hashlib.md5(admin_pass.encode()).hexdigest()
+    # get_users — список пользователей (только admin, проверяем по admin_id)
+    if action == 'get_users':
+        admin_id = int(body.get('admin_id', 0))
 
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute(f"SELECT role FROM {SCHEMA}.users WHERE username = %s AND password_hash = %s", (admin_login, pw_hash))
+        cur.execute("SELECT role FROM " + SCHEMA + ".users WHERE id = " + str(admin_id))
         row = cur.fetchone()
 
         if not row or row[0] != 'admin':
             conn.close()
             return {'statusCode': 403, 'headers': CORS, 'body': json.dumps({'error': 'Доступ запрещён'})}
 
-        cur.execute(f"SELECT id, username, role, created_at FROM {SCHEMA}.users ORDER BY created_at DESC")
+        cur.execute("SELECT id, username, role, created_at FROM " + SCHEMA + ".users ORDER BY created_at DESC")
         rows = cur.fetchall()
         conn.close()
 
         users = [{'id': r[0], 'username': r[1], 'role': r[2], 'created_at': str(r[3])} for r in rows]
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'users': users})}
 
-    return {'statusCode': 404, 'headers': CORS, 'body': json.dumps({'error': 'Not found'})}
+    return {'statusCode': 404, 'headers': CORS, 'body': json.dumps({'error': 'Unknown action'})}

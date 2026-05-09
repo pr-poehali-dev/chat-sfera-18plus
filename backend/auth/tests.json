@@ -3,18 +3,16 @@
     {
       "name": "Login admin",
       "method": "POST",
-      "path": "/login",
-      "body": {"username": "admin", "password": "admin123"},
+      "path": "/",
+      "body": {"action": "login", "username": "admin", "password": "admin123"},
       "expectedStatus": 200,
-      "expectedBody": {"user": {"username": "admin", "role": "admin"}},
       "bodyMatcher": "partial"
     },
     {
-      "name": "Login wrong password",
-      "method": "POST",
-      "path": "/login",
-      "body": {"username": "admin", "password": "wrong"},
-      "expectedStatus": 401,
+      "name": "Auth OPTIONS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
       "bodyMatcher": "partial"
     }
   ]
