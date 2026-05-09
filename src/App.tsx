@@ -246,12 +246,16 @@ function HomePage({ setPage, user }: { setPage: (p: Page) => void; user: User })
 }
 
 // ==================== МЕССЕНДЖЕР ====================
+// Глобальный стейт комнат и сообщений — сохраняется при смене вкладок
+const _globalRooms: ChatRoom[] = [];
+const _globalMsgMap: Record<number, ChatMsg[]> = {};
+
 function MessengerPage({ user }: { user: User }) {
   const isAdmin = user.role === "admin";
   const [tab, setTab] = useState<ChatType>("dm");
-  const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const [rooms, setRoomsState] = useState<ChatRoom[]>(_globalRooms);
   const [activeRoom, setActiveRoom] = useState<ChatRoom | null>(null);
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [messages, setMsgsState] = useState<ChatMsg[]>([]);
   const [inputVal, setInputVal] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
@@ -259,10 +263,34 @@ function MessengerPage({ user }: { user: User }) {
   const [showMembers, setShowMembers] = useState(false);
   const [addMemberName, setAddMemberName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [showNewDm, setShowNewDm] = useState(false);
+  const [dmUsername, setDmUsername] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const msgEnd = useRef<HTMLDivElement>(null);
 
+  // Синхронизация с глобальным стейтом
+  const setRooms = (updater: ChatRoom[] | ((prev: ChatRoom[]) => ChatRoom[])) => {
+    const next = typeof updater === "function" ? updater(_globalRooms) : updater;
+    _globalRooms.length = 0;
+    next.forEach(r => _globalRooms.push(r));
+    setRoomsState([..._globalRooms]);
+  };
+  const setMessages = (updater: ChatMsg[] | ((prev: ChatMsg[]) => ChatMsg[])) => {
+    if (!activeRoom) return;
+    const prev = _globalMsgMap[activeRoom.id] || [];
+    const next = typeof updater === "function" ? updater(prev) : updater;
+    _globalMsgMap[activeRoom.id] = next;
+    setMsgsState([...next]);
+  };
+
   useEffect(() => { msgEnd.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  // Загрузить сообщения при открытии комнаты
+  const openRoom = (room: ChatRoom) => {
+    setActiveRoom(room);
+    setMsgsState(_globalMsgMap[room.id] || []);
+    setShowMembers(false);
+  };
 
   const createRoom = () => {
     if (!newName.trim()) return;
@@ -272,10 +300,34 @@ function MessengerPage({ user }: { user: User }) {
       color: tab === "group" ? "blue" : "orange", members: [{ id: user.id, username: user.username, display_name: user.display_name, avatar_url: user.avatar_url }],
       description: newDesc.trim(),
     };
+    const initMsgs: ChatMsg[] = [{ id: Date.now(), from: "them", text: tab === "channel" ? "Канал создан. Публикуйте сообщения." : "Группа создана. Добавляйте участников.", author: "Система" }];
+    _globalMsgMap[room.id] = initMsgs;
     setRooms(prev => [room, ...prev]);
     setNewName(""); setNewDesc(""); setShowCreate(false);
     setActiveRoom(room);
-    setMessages([{ id: Date.now(), from: "them", text: tab === "channel" ? "Канал создан. Публикуйте сообщения." : "Группа создана. Добавляйте участников.", author: "Система" }]);
+    setMsgsState(initMsgs);
+  };
+
+  const startDm = () => {
+    const name = dmUsername.trim();
+    if (!name) return;
+    if (name.toLowerCase() === user.username.toLowerCase()) { setDmUsername(""); return; }
+    // Проверяем, нет ли уже такого DM
+    const existing = _globalRooms.find(r => r.type === "dm" && r.members.some(m => m.username.toLowerCase() === name.toLowerCase()));
+    if (existing) { openRoom(existing); setShowNewDm(false); setDmUsername(""); return; }
+    const room: ChatRoom = {
+      id: Date.now(), name, type: "dm",
+      avatar: name[0], lastMsg: "Начните диалог", time: "только что",
+      color: "purple", members: [
+        { id: user.id, username: user.username, display_name: user.display_name, avatar_url: user.avatar_url },
+        { id: Date.now() + 1, username: name },
+      ],
+    };
+    _globalMsgMap[room.id] = [];
+    setRooms(prev => [room, ...prev]);
+    setShowNewDm(false); setDmUsername("");
+    setActiveRoom(room);
+    setMsgsState([]);
   };
 
   const sendMessage = () => {
@@ -374,30 +426,42 @@ function MessengerPage({ user }: { user: User }) {
   // Экран чата
   if (activeRoom) {
     const isChannel = activeRoom.type === "channel";
+    const isDm = activeRoom.type === "dm";
     const canSend = !isChannel || isAdmin;
+    const companion = isDm ? activeRoom.members.find(m => m.id !== user.id) : null;
     return (
       <div className="flex-1 flex flex-col">
         <div className="glass px-4 py-3 flex items-center gap-3 border-b border-white/5">
           <button onClick={() => setActiveRoom(null)} className="text-[hsl(var(--muted-foreground))] hover:text-white"><Icon name="ArrowLeft" size={20} /></button>
-          <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${isChannel ? "from-orange-500 to-red-500" : "from-blue-500 to-cyan-500"} flex items-center justify-center font-bold text-white font-montserrat flex-shrink-0`}>
-            {activeRoom.avatar.toUpperCase()}
-          </div>
+          {isDm && companion ? (
+            <AvatarImg src={companion.avatar_url} letter={companion.username[0]} size="md" color="purple" />
+          ) : (
+            <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${isChannel ? "from-orange-500 to-red-500" : "from-blue-500 to-cyan-500"} flex items-center justify-center font-bold text-white font-montserrat flex-shrink-0`}>
+              {activeRoom.avatar.toUpperCase()}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-white text-sm truncate">{activeRoom.name}</div>
-            <button onClick={() => setShowMembers(true)} className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 hover:text-purple-300 transition-colors">
-              <Icon name={isChannel ? "Radio" : "Users"} size={10} />
-              {isChannel ? "Канал" : "Группа"} · {activeRoom.members.length} участников
-            </button>
+            <div className="font-semibold text-white text-sm truncate">{isDm && companion ? (companion.display_name || companion.username) : activeRoom.name}</div>
+            {!isDm ? (
+              <button onClick={() => setShowMembers(true)} className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 hover:text-purple-300 transition-colors">
+                <Icon name={isChannel ? "Radio" : "Users"} size={10} />
+                {isChannel ? "Канал" : "Группа"} · {activeRoom.members.length} участников
+              </button>
+            ) : (
+              <div className="text-xs text-[hsl(var(--muted-foreground))]">@{companion?.username}</div>
+            )}
           </div>
-          <button onClick={() => setShowMembers(true)} className="text-[hsl(var(--muted-foreground))] hover:text-white">
-            <Icon name="Users" size={18} />
-          </button>
+          {!isDm && (
+            <button onClick={() => setShowMembers(true)} className="text-[hsl(var(--muted-foreground))] hover:text-white">
+              <Icon name="Users" size={18} />
+            </button>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center pt-10">
-              <Icon name={isChannel ? "Radio" : "Users"} size={40} className="text-purple-400/30 mb-4" />
-              <div className="text-sm font-semibold text-white/50">{isChannel ? "Канал пуст" : "Группа создана"}</div>
+              <Icon name={isChannel ? "Radio" : isDm ? "MessageCircle" : "Users"} size={40} className="text-purple-400/30 mb-4" />
+              <div className="text-sm font-semibold text-white/50">{isChannel ? "Канал пуст" : isDm ? "Начните диалог" : "Группа создана"}</div>
             </div>
           )}
           {messages.map((msg) => (
@@ -456,6 +520,26 @@ function MessengerPage({ user }: { user: User }) {
           </button>
         ))}
       </div>
+      {/* DM: кнопка "Написать" */}
+      {tab === "dm" && (
+        <div className="px-4 mb-3">
+          {showNewDm ? (
+            <div className="glass rounded-3xl p-4 space-y-3 animate-fade-in">
+              <div className="text-sm font-semibold text-white">Новое сообщение</div>
+              <input value={dmUsername} onChange={e => setDmUsername(e.target.value)} onKeyDown={e => e.key === "Enter" && startDm()} placeholder="Введите логин пользователя" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-[hsl(var(--muted-foreground))] outline-none focus:border-purple-500/50" />
+              <div className="flex gap-2">
+                <button onClick={startDm} disabled={!dmUsername.trim()} className="btn-gradient text-white text-sm font-semibold px-5 py-2.5 rounded-xl flex-1 disabled:opacity-50">Написать</button>
+                <button onClick={() => { setShowNewDm(false); setDmUsername(""); }} className="glass text-[hsl(var(--muted-foreground))] text-sm px-4 py-2.5 rounded-xl">Отмена</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowNewDm(true)} className="w-full glass glass-hover border border-dashed border-purple-500/30 rounded-2xl py-3 flex items-center justify-center gap-2 text-sm text-purple-300 hover:text-purple-200">
+              <Icon name="Plus" size={16} />Написать сообщение
+            </button>
+          )}
+        </div>
+      )}
+      {/* Группы/каналы: кнопка создания (только для админов) */}
       {isAdmin && tab !== "dm" && (
         <div className="px-4 mb-3">
           {showCreate ? (
@@ -480,11 +564,11 @@ function MessengerPage({ user }: { user: User }) {
           <div className="glass rounded-3xl p-10 text-center animate-fade-in">
             <Icon name={tab === "channel" ? "Radio" : tab === "group" ? "Users" : "MessageCircle"} size={40} className="text-purple-400/30 mx-auto mb-4" />
             <div className="font-montserrat font-bold text-white/60 text-base mb-2">{tab === "dm" ? "Нет сообщений" : tab === "group" ? "Нет групп" : "Нет каналов"}</div>
-            <div className="text-sm text-[hsl(var(--muted-foreground))]">{tab === "dm" ? "Здесь появятся диалоги" : tab === "group" ? (isAdmin ? "Создайте первую группу выше" : "Групп пока нет") : isAdmin ? "Создайте первый канал выше" : "Каналов пока нет"}</div>
+            <div className="text-sm text-[hsl(var(--muted-foreground))]">{tab === "dm" ? "Нажмите «+» выше, чтобы начать переписку" : tab === "group" ? (isAdmin ? "Создайте первую группу выше" : "Групп пока нет") : isAdmin ? "Создайте первый канал выше" : "Каналов пока нет"}</div>
           </div>
         ) : tabRooms.map((room, i) => (
-          <button key={room.id} onClick={() => { setActiveRoom(room); setMessages([]); }} className="w-full glass glass-hover rounded-3xl p-4 flex items-center gap-3 text-left animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
-            <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${room.color === "orange" ? "from-orange-500 to-red-500" : "from-blue-500 to-cyan-500"} flex items-center justify-center font-bold text-white font-montserrat flex-shrink-0`}>{room.avatar.toUpperCase()}</div>
+          <button key={room.id} onClick={() => openRoom(room)} className="w-full glass glass-hover rounded-3xl p-4 flex items-center gap-3 text-left animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
+            <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${room.color === "orange" ? "from-orange-500 to-red-500" : room.color === "purple" ? "from-purple-500 to-pink-500" : "from-blue-500 to-cyan-500"} flex items-center justify-center font-bold text-white font-montserrat flex-shrink-0`}>{room.avatar.toUpperCase()}</div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
                 <span className="font-semibold text-white text-sm truncate flex items-center gap-1.5">
@@ -940,12 +1024,12 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col overflow-hidden relative z-10" key={page}>
-        {page === "home" && <HomePage setPage={setPage} user={user} />}
-        {page === "messenger" && <MessengerPage user={user} />}
-        {page === "profile" && <ProfilePage user={user} onUpdateUser={handleUpdateUser} />}
-        {page === "account" && <AccountPage user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />}
-        {page === "admin" && isAdmin && <AdminPage user={user} />}
+      <main className="flex-1 flex flex-col overflow-hidden relative z-10">
+        <div className={page === "home" ? "flex-1 flex flex-col overflow-hidden" : "hidden"}><HomePage setPage={setPage} user={user} /></div>
+        <div className={page === "messenger" ? "flex-1 flex flex-col overflow-hidden" : "hidden"}><MessengerPage user={user} /></div>
+        <div className={page === "profile" ? "flex-1 flex flex-col overflow-hidden" : "hidden"}><ProfilePage user={user} onUpdateUser={handleUpdateUser} /></div>
+        <div className={page === "account" ? "flex-1 flex flex-col overflow-hidden" : "hidden"}><AccountPage user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} /></div>
+        {isAdmin && <div className={page === "admin" ? "flex-1 flex flex-col overflow-hidden" : "hidden"}><AdminPage user={user} /></div>}
       </main>
 
       <nav className="relative z-10 glass border-t border-white/5 px-2 py-1 flex items-center justify-around flex-shrink-0">

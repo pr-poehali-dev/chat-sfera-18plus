@@ -185,7 +185,7 @@ def handler(event: dict, context) -> dict:
         )
         ct_map = {'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp', 'gif': 'image/gif'}
         s3.put_object(Bucket='files', Key=key, Body=raw, ContentType=ct_map.get(file_ext, 'image/jpeg'))
-        cdn_url = 'https://cdn.poehali.dev/projects/' + os.environ['AWS_ACCESS_KEY_ID'] + '/files/' + key
+        cdn_url = 'https://cdn.poehali.dev/projects/' + os.environ['AWS_ACCESS_KEY_ID'] + '/bucket/' + key
 
         conn = get_conn()
         cur = conn.cursor()
@@ -215,7 +215,7 @@ def handler(event: dict, context) -> dict:
             'mp4': 'video/mp4', 'mov': 'video/quicktime', 'avi': 'video/avi', 'webm': 'video/webm', 'mkv': 'video/x-matroska'
         }
         s3.put_object(Bucket='files', Key=key, Body=raw, ContentType=ct_map.get(file_ext, 'application/octet-stream'))
-        cdn_url = 'https://cdn.poehali.dev/projects/' + os.environ['AWS_ACCESS_KEY_ID'] + '/files/' + key
+        cdn_url = 'https://cdn.poehali.dev/projects/' + os.environ['AWS_ACCESS_KEY_ID'] + '/bucket/' + key
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'url': cdn_url, 'type': 'video' if is_video else 'photo'})}
 
     return {'statusCode': 404, 'headers': CORS, 'body': json.dumps({'error': 'Unknown action'})}
