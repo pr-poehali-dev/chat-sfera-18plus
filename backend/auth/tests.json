@@ -9,6 +9,14 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Login Бог666",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "login", "username": "Бог666", "password": "803254"},
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Auth OPTIONS",
       "method": "OPTIONS",
       "path": "/",
